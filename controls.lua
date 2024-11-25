@@ -1,5 +1,5 @@
 -- table.insert(ctrls,{Name = "code",ControlType = "Text",PinStyle = "Input",Count = 1})
-local outputCount = props["Device Type"].Value == "Strip" and props["Number Of Outputs"].Value or 1
+local outputCount = props["Device Type"].Value == "Power Strip" and props["Number Of Outputs"].Value or 1
 
 table.insert(
   ctrls,
@@ -92,7 +92,7 @@ table.insert(
     UserPin = true
   }
 )
-if props["Energy Monitoring"].Value then
+if props["Energy Monitoring"].Value and props["Device Type"].Value ~= "Light Strip" then
   table.insert(
     ctrls,
     {
@@ -161,7 +161,7 @@ table.insert(
     Count = outputCount
   }
 )
-if props["Device Type"].Value == "Dimmer" then
+if props["Device Type"].Value == "Dimmer" or props["Device Type"].Value == "Light Strip" then
   table.insert(
     ctrls,
     {
@@ -175,7 +175,7 @@ if props["Device Type"].Value == "Dimmer" then
     }
   )
 end
-if props["Device Type"].Value == "Strip" then
+if props["Device Type"].Value == "Power Strip" then
   table.insert(
     ctrls,
     {

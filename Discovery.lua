@@ -15,12 +15,13 @@ DiscoverySocket.EventHandler = function(socket, packet)
   if data.system.get_sysinfo.alias then 
     print(decodeToString(packet.Data,true))
     print(data.system.get_sysinfo.alias.."["..data.system.get_sysinfo.model.."] - "..packet.Address)
-    if DiscoveredDevices[data.system.get_sysinfo.mac] == nil then
-      DiscoveredDevices[data.system.get_sysinfo.mac] = {}
+    local mac = data.system.get_sysinfo.mac and data.system.get_sysinfo.mac or data.system.get_sysinfo.mic_mac -- support light strips
+    if DiscoveredDevices[mac] == nil then
+      DiscoveredDevices[mac] = {}
     end
-    DiscoveredDevices[data.system.get_sysinfo.mac].alias = data.system.get_sysinfo.alias
-    DiscoveredDevices[data.system.get_sysinfo.mac].model = data.system.get_sysinfo.model
-    DiscoveredDevices[data.system.get_sysinfo.mac].ip = packet.Address
+    DiscoveredDevices[mac].alias = data.system.get_sysinfo.alias
+    DiscoveredDevices[mac].model = data.system.get_sysinfo.model
+    DiscoveredDevices[mac].ip = packet.Address
   end 
   RenderDiscoveredDevices()
 end 

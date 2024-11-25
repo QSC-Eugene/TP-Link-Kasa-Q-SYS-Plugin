@@ -156,7 +156,7 @@ elseif current_page == 1 then --Setup
     Style = "Text",
   }
 elseif current_page == 2 then -- Loads
-  if props["Device Type"].Value == "Strip" then
+  if props["Device Type"].Value == "Power Strip" then
     for p = 1, props["Number Of Outputs"].Value do
       x = 0
       table.insert(

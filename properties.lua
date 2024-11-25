@@ -1,29 +1,9 @@
--- table.insert(
---   props,
---   {
---     Name = "Number Of Single Endpoints",
---     Type = "integer",
---     Min = 0,
---     Max = MaxDevices,
---     Value = 1
---   }
--- )
--- table.insert(
---   props,
---   {
---     Name = "Number Of Multi Endpoints",
---     Type = "integer",
---     Min = 0,
---     Max = MaxDevices,
---     Value = 0
---   }
--- )
 table.insert(
   props,
   {
     Name = "Device Type",
     Type = "enum",
-    Choices = {"Switch", "Dimmer", "Strip"},
+    Choices = {"Switch", "Dimmer", "Power Strip", "Light Strip"},
     Value = "Switch"
   }
 )

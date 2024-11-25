@@ -1,8 +1,8 @@
 PluginInfo = {
   Name = "TP-Link Kasa",
   Author = "Eugene Dunn",
-  BuildVersion = "0.5.3.0",
-  Version = "0.5.3.0",
+  BuildVersion = "0.6.0.1",
+  Version = "0.6.0.1",
   Id = "ae99e75d-3c3f-4f13-97eb-7443f56cf23e",
   Description = ""
 }
@@ -47,32 +47,12 @@ end
 -- Define User configurable Properties of the plugin
 function GetProperties()
   local props = {}
-  -- table.insert(
-  --   props,
-  --   {
-  --     Name = "Number Of Single Endpoints",
-  --     Type = "integer",
-  --     Min = 0,
-  --     Max = MaxDevices,
-  --     Value = 1
-  --   }
-  -- )
-  -- table.insert(
-  --   props,
-  --   {
-  --     Name = "Number Of Multi Endpoints",
-  --     Type = "integer",
-  --     Min = 0,
-  --     Max = MaxDevices,
-  --     Value = 0
-  --   }
-  -- )
   table.insert(
     props,
     {
       Name = "Device Type",
       Type = "enum",
-      Choices = {"Switch", "Dimmer", "Strip"},
+      Choices = {"Switch", "Dimmer", "Power Strip", "Light Strip"},
       Value = "Switch"
     }
   )
@@ -129,7 +109,7 @@ function RectifyProperties(props)
     props["Debug Print"].IsHidden = true 
   end
   props["Energy Monitoring"].IsHidden = props["Device Type"].Value == "Dimmer" 
-  props["Number Of Outputs"].IsHidden = props["Device Type"].Value ~= "Strip"
+  props["Number Of Outputs"].IsHidden = props["Device Type"].Value ~= "Power Strip"
   return props
 end
 
@@ -149,7 +129,7 @@ end
 function GetControls(props)
   local ctrls = {}
   -- table.insert(ctrls,{Name = "code",ControlType = "Text",PinStyle = "Input",Count = 1})
-  local outputCount = props["Device Type"].Value == "Strip" and props["Number Of Outputs"].Value or 1
+  local outputCount = props["Device Type"].Value == "Power Strip" and props["Number Of Outputs"].Value or 1
   
   table.insert(
     ctrls,
@@ -242,7 +222,7 @@ function GetControls(props)
       UserPin = true
     }
   )
-  if props["Energy Monitoring"].Value then
+  if props["Energy Monitoring"].Value and props["Device Type"].Value ~= "Light Strip" then
     table.insert(
       ctrls,
       {
@@ -311,7 +291,7 @@ function GetControls(props)
       Count = outputCount
     }
   )
-  if props["Device Type"].Value == "Dimmer" then
+  if props["Device Type"].Value == "Dimmer" or props["Device Type"].Value == "Light Strip" then
     table.insert(
       ctrls,
       {
@@ -325,7 +305,7 @@ function GetControls(props)
       }
     )
   end
-  if props["Device Type"].Value == "Strip" then
+  if props["Device Type"].Value == "Power Strip" then
     table.insert(
       ctrls,
       {
@@ -502,7 +482,7 @@ function GetControlLayout(props)
       Style = "Text",
     }
   elseif current_page == 2 then -- Loads
-    if props["Device Type"].Value == "Strip" then
+    if props["Device Type"].Value == "Power Strip" then
       for p = 1, props["Number Of Outputs"].Value do
         x = 0
         table.insert(
@@ -780,12 +760,13 @@ DiscoverySocket.EventHandler = function(socket, packet)
   if data.system.get_sysinfo.alias then 
     print(decodeToString(packet.Data,true))
     print(data.system.get_sysinfo.alias.."["..data.system.get_sysinfo.model.."] - "..packet.Address)
-    if DiscoveredDevices[data.system.get_sysinfo.mac] == nil then
-      DiscoveredDevices[data.system.get_sysinfo.mac] = {}
+    local mac = data.system.get_sysinfo.mac and data.system.get_sysinfo.mac or data.system.get_sysinfo.mic_mac -- support light strips
+    if DiscoveredDevices[mac] == nil then
+      DiscoveredDevices[mac] = {}
     end
-    DiscoveredDevices[data.system.get_sysinfo.mac].alias = data.system.get_sysinfo.alias
-    DiscoveredDevices[data.system.get_sysinfo.mac].model = data.system.get_sysinfo.model
-    DiscoveredDevices[data.system.get_sysinfo.mac].ip = packet.Address
+    DiscoveredDevices[mac].alias = data.system.get_sysinfo.alias
+    DiscoveredDevices[mac].model = data.system.get_sysinfo.model
+    DiscoveredDevices[mac].ip = packet.Address
   end 
   RenderDiscoveredDevices()
 end 
