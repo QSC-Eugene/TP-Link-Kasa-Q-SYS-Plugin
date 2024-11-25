@@ -1,8 +1,8 @@
 PluginInfo = {
   Name = "TP-Link Kasa",
   Author = "Eugene Dunn",
-  BuildVersion = "0.6.0.1",
-  Version = "0.6.0.1",
+  BuildVersion = "0.6.0.4",
+  Version = "0.6.0.4",
   Id = "ae99e75d-3c3f-4f13-97eb-7443f56cf23e",
   Description = ""
 }
@@ -32,7 +32,7 @@ function GetPrettyName(props)
 end
 
 -- Optional function used if plugin has multiple pages
-PageNames = {"Setup","Loads","Discovery"} --List the pages within the plugin
+PageNames = {"Setup","Control","Discovery"} --List the pages within the plugin
 function GetPages(props)
   local pages = {}
   if props["Energy Monitoring"].Value then
@@ -481,176 +481,176 @@ function GetControlLayout(props)
       Size = {200, 16},
       Style = "Text",
     }
-  elseif current_page == 2 then -- Loads
-    if props["Device Type"].Value == "Power Strip" then
-      for p = 1, props["Number Of Outputs"].Value do
-        x = 0
-        table.insert(
-          graphics,
-          {
-            Type = "Label",
-            Text = p..":",
+  elseif current_page == 2 then -- Control
+    if props["Device Type"].Value ~= "Light Strip" then
+      if props["Device Type"].Value == "Power Strip" then
+        for p = 1, props["Number Of Outputs"].Value do
+          x = 0
+          table.insert(
+            graphics,
+            {
+              Type = "Label",
+              Text = p..":",
+              Position = {x, y},
+              Size = {24,16},
+              FontSize = 12,
+              HTextAlign = "Right"
+            }
+          )
+          x = x + 24
+          layout["PlugName "..p] = {
             Position = {x, y},
-            Size = {24,16},
-            FontSize = 12,
-            HTextAlign = "Right"
+            Size = {50, 16},
+            Style = "Text",
           }
-        )
-        x = x + 24
-        layout["PlugName "..p] = {
+          x = x + 50
+          layout["Off "..p] = {
+            Position = {x, y},
+            Size = {36,16},
+            Style = "Button",
+            ButtonStyle = "Toggle",
+            Legend = "Off",
+            FontSize = 9
+          }
+          x = x + 36
+          layout["On "..p] = {
+            Position = {x, y},
+            Size = {36,16},
+            Style = "Button",
+            ButtonStyle = "Toggle",
+            Legend = "On",
+            FontSize = 9
+          }
+          x = x + 36
+          layout["Toggle "..p] = {
+            Position = {x, y},
+            Size = {36,16},
+            Style = "Button",
+            ButtonStyle = "Toggle",
+            Legend = "Toggle",
+            FontSize = 9
+          }
+          if props["Energy Monitoring"].Value then
+            x = x + 36
+            layout["Voltage "..p] = {
+              Position = {x, y},
+              Size = {50, 16},
+              Style = "Text",
+            }
+            x = x + 50
+            layout["Current "..p] = {
+              Position = {x, y},
+              Size = {50, 16},
+              Style = "Text",
+            }
+            x = x + 50
+            layout["Power "..p] = {
+              Position = {x, y},
+              Size = {50, 16},
+              Style = "Text",
+            }
+          end
+          y = y + 20
+        end
+      else
+        layout["Off"] = {
           Position = {x, y},
-          Size = {50, 16},
-          Style = "Text",
-        }
-        x = x + 50
-        layout["Off "..p] = {
-          Position = {x, y},
-          Size = {36,16},
+          Size = {60, 40},
           Style = "Button",
           ButtonStyle = "Toggle",
           Legend = "Off",
-          FontSize = 9
+          FontSize = 14
         }
-        x = x + 36
-        layout["On "..p] = {
+        x = x + 64
+        layout["On"] = {
           Position = {x, y},
-          Size = {36,16},
+          Size = {60, 40},
           Style = "Button",
           ButtonStyle = "Toggle",
           Legend = "On",
-          FontSize = 9
+          FontSize = 14
         }
-        x = x + 36
-        layout["Toggle "..p] = {
+        x = x + 64
+        layout["Toggle"] = {
           Position = {x, y},
-          Size = {36,16},
+          Size = {60, 40},
           Style = "Button",
           ButtonStyle = "Toggle",
           Legend = "Toggle",
-          FontSize = 9
+          FontSize = 14
         }
-        if props["Energy Monitoring"].Value then
-          x = x + 36
-          layout["Voltage "..p] = {
+        x = 0
+        y = y + 64
+        if props["Device Type"].Value == "Dimmer" then
+          layout["Brightness"] = {
             Position = {x, y},
-            Size = {50, 16},
-            Style = "Text",
+            Size = {188, 40},
+            Style = "Fader",
           }
-          x = x + 50
-          layout["Current "..p] = {
-            Position = {x, y},
-            Size = {50, 16},
-            Style = "Text",
-          }
-          x = x + 50
-          layout["Power "..p] = {
-            Position = {x, y},
-            Size = {50, 16},
-            Style = "Text",
-          }
+          y = y + 44
         end
-        y = y + 20
-      end
-    else
-      layout["Off"] = {
-        Position = {x, y},
-        Size = {60, 40},
-        Style = "Button",
-        ButtonStyle = "Toggle",
-        Legend = "Off",
-        FontSize = 14
-      }
-      x = x + 64
-      layout["On"] = {
-        Position = {x, y},
-        Size = {60, 40},
-        Style = "Button",
-        ButtonStyle = "Toggle",
-        Legend = "On",
-        FontSize = 14
-      }
-      x = x + 64
-      layout["Toggle"] = {
-        Position = {x, y},
-        Size = {60, 40},
-        Style = "Button",
-        ButtonStyle = "Toggle",
-        Legend = "Toggle",
-        FontSize = 14
-      }
-      x = 0
-      y = y + 64
-      if props["Device Type"].Value == "Dimmer" then
-        layout["Brightness"] = {
-          Position = {x, y},
-          Size = {188, 40},
-          Style = "Fader",
-        }
-        y = y + 44
-      end
-      if props["Energy Monitoring"].Value then
-        table.insert(
-          graphics,
-          {
-            Type = "Label",
-            Text = "Voltage:",
+        if props["Energy Monitoring"].Value then
+          table.insert(
+            graphics,
+            {
+              Type = "Label",
+              Text = "Voltage:",
+              Position = {x, y},
+              Size = {50, 16},
+              HTextAlign = "Right",
+              FontSize = 12
+            }
+          )
+          x = x + 50
+          layout["Voltage"] = {
             Position = {x, y},
             Size = {50, 16},
-            HTextAlign = "Right",
-            FontSize = 12
+            Style = "Text",
           }
-        )
-        x = x + 50
-        layout["Voltage"] = {
-          Position = {x, y},
-          Size = {50, 16},
-          Style = "Text",
-        }
-        x = 0
-        y = y + 20
-        table.insert(
-          graphics,
-          {
-            Type = "Label",
-            Text = "Current:",
+          x = 0
+          y = y + 20
+          table.insert(
+            graphics,
+            {
+              Type = "Label",
+              Text = "Current:",
+              Position = {x, y},
+              Size = {50, 16},
+              HTextAlign = "Right",
+              FontSize = 12
+            }
+          )
+          x = x + 50
+          layout["Current"] = {
             Position = {x, y},
             Size = {50, 16},
-            HTextAlign = "Right",
-            FontSize = 12
+            Style = "Text",
           }
-        )
-        x = x + 50
-        layout["Current"] = {
-          Position = {x, y},
-          Size = {50, 16},
-          Style = "Text",
-        }
-        x = 0
-        y = y + 20
-        table.insert(
-          graphics,
-          {
-            Type = "Label",
-            Text = "Power:",
+          x = 0
+          y = y + 20
+          table.insert(
+            graphics,
+            {
+              Type = "Label",
+              Text = "Power:",
+              Position = {x, y},
+              Size = {50, 16},
+              HTextAlign = "Right",
+              FontSize = 12
+            }
+          )
+          x = x + 50
+          layout["Power"] = {
             Position = {x, y},
             Size = {50, 16},
-            HTextAlign = "Right",
-            FontSize = 12
+            Style = "Text",
           }
-        )
-        x = x + 50
-        layout["Power"] = {
-          Position = {x, y},
-          Size = {50, 16},
-          Style = "Text",
-        }
   
+        end
       end
+    else -- Light Strips
+  
     end
-  
-    
-    
-  
   end
   return layout, graphics
 end
@@ -660,8 +660,8 @@ if Controls then
 rapidjson = require("rapidjson")
 
 DeviceType = Properties["Device Type"].Value
-isStrip = DeviceType == "Strip"
-EnergyMonitoring = DeviceType ~= "Dimmer" and Properties["Energy Monitoring"].Value or false
+isStrip = DeviceType == "Power Strip"
+EnergyMonitoring = (DeviceType ~= "Dimmer" or DeviceType ~= "Light Strip") and Properties["Energy Monitoring"].Value or false
 
 DebugTx, DebugRx, DebugFunction = false, false, false
 DebugPrint = Properties["Debug Print"].Value
@@ -777,10 +777,13 @@ Controls.Discover.EventHandler = function()
   print("Sending Discovery packet")
   DiscoveredDevices = {}
   RenderDiscoveredDevices()
-  -- DiscoverySocket:Send("255.255.255.255",9999,"\xd0\xf2\x81\xf8\x8b\xff\x9a\xf7\xd5\xef\x94\xb6\xd1\xb4\xc0\x9f\xec\x95\xe6\x8f\xe1\x87\xe8\xca\xf0\x8b\xf6\x8b\xf6")
-  for _,interface in pairs(Network.Interfaces()) do 
-    DiscoverySocket:Send(interface.BroadcastAddress,9999,"\xd0\xf2\x81\xf8\x8b\xff\x9a\xf7\xd5\xef\x94\xb6\xd1\xb4\xc0\x9f\xec\x95\xe6\x8f\xe1\x87\xe8\xca\xf0\x8b\xf6\x8b\xf6")
-  end 
+  if System.IsEmulating then
+    DiscoverySocket:Send("255.255.255.255",9999,"\xd0\xf2\x81\xf8\x8b\xff\x9a\xf7\xd5\xef\x94\xb6\xd1\xb4\xc0\x9f\xec\x95\xe6\x8f\xe1\x87\xe8\xca\xf0\x8b\xf6\x8b\xf6")
+  else
+    for _,interface in pairs(Network.Interfaces()) do 
+      DiscoverySocket:Send(interface.BroadcastAddress,9999,"\xd0\xf2\x81\xf8\x8b\xff\x9a\xf7\xd5\xef\x94\xb6\xd1\xb4\xc0\x9f\xec\x95\xe6\x8f\xe1\x87\xe8\xca\xf0\x8b\xf6\x8b\xf6")
+    end 
+  end
   Timer.CallAfter(function()
     DiscoverySocket:Close()
   end, 5
@@ -840,15 +843,9 @@ Socket.EventHandler = function(socket, event, err)
       end
     elseif not LastPacketErr then
       LastPacketErr = true
-      -- print("incomplete Packet")
     else
-      -- end
-      -- Controls["Device_" .. x .. "_Status"].Value = 2 --fault
-      -- Controls["Device_" .. x .. "_Status"].String = "JSON Error: ", err
-      -- print("JSON Err:", err)
       print("strikeout")
       print(decodeToString(Buffer))
-      -- if err:find("The document root must not be followed by other values") then
       Buffer = ""
       LastPacketErr = false
     end
@@ -1111,6 +1108,9 @@ function parseGetInfo(data)
   if data.mac then
     Controls["MACAddress"].String = data.mac
     Info.mac = data.mac
+  elseif data.mic_mac then -- for light strips
+    Controls["MACAddress"].String = data.mic_mac
+    Info.mac = data.mic_mac
   end
   if data.sw_ver then
     Controls["DeviceFirmware"].String = data.hw_ver

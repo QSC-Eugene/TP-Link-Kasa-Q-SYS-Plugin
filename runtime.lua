@@ -1,8 +1,8 @@
 rapidjson = require("rapidjson")
 
 DeviceType = Properties["Device Type"].Value
-isStrip = DeviceType == "Strip"
-EnergyMonitoring = DeviceType ~= "Dimmer" and Properties["Energy Monitoring"].Value or false
+isStrip = DeviceType == "Power Strip"
+EnergyMonitoring = (DeviceType ~= "Dimmer" or DeviceType ~= "Light Strip") and Properties["Energy Monitoring"].Value or false
 
 DebugTx, DebugRx, DebugFunction = false, false, false
 DebugPrint = Properties["Debug Print"].Value
@@ -76,15 +76,9 @@ Socket.EventHandler = function(socket, event, err)
       end
     elseif not LastPacketErr then
       LastPacketErr = true
-      -- print("incomplete Packet")
     else
-      -- end
-      -- Controls["Device_" .. x .. "_Status"].Value = 2 --fault
-      -- Controls["Device_" .. x .. "_Status"].String = "JSON Error: ", err
-      -- print("JSON Err:", err)
       print("strikeout")
       print(decodeToString(Buffer))
-      -- if err:find("The document root must not be followed by other values") then
       Buffer = ""
       LastPacketErr = false
     end
@@ -347,6 +341,9 @@ function parseGetInfo(data)
   if data.mac then
     Controls["MACAddress"].String = data.mac
     Info.mac = data.mac
+  elseif data.mic_mac then -- for light strips
+    Controls["MACAddress"].String = data.mic_mac
+    Info.mac = data.mic_mac
   end
   if data.sw_ver then
     Controls["DeviceFirmware"].String = data.hw_ver
