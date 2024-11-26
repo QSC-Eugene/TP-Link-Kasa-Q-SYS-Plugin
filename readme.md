@@ -4,6 +4,19 @@
 
 Tested on QDS 9.12.1 with a Core 110f
 
+## Functionality
+
+- All
+  - Device Name (Read/Write)
+  - Mac Address (Read Only)
+- Switches
+  - On/Off
+  - Toggle
+- Dimmers
+  - On/Off
+  - Toggle
+  - Brightness
+
 ## Kasa Devices Tested
 
 - KS200M
@@ -20,4 +33,4 @@ Tested on QDS 9.12.1 with a Core 110f
 
 ### Thank You
 
-- @qsc-hoperoth for testing and inspiring me to add RGB Strip support
+- [@qsc-hoperoth](https://github.com/QSC-hoperoth) for testing and inspiring me to add RGB light strip support.
