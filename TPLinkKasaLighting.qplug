@@ -1,8 +1,8 @@
 PluginInfo = {
   Name = "TP-Link Kasa",
   Author = "Eugene Dunn",
-  BuildVersion = "0.6.0.11",
-  Version = "0.6.0.11",
+  BuildVersion = "0.6.2.5",
+  Version = "0.6.2.5",
   Id = "ae99e75d-3c3f-4f13-97eb-7443f56cf23e",
   Description = ""
 }
@@ -108,7 +108,7 @@ function RectifyProperties(props)
   if props.plugin_show_debug.Value == false then 
     props["Debug Print"].IsHidden = true 
   end
-  props["Energy Monitoring"].IsHidden = props["Device Type"].Value == "Dimmer" 
+  props["Energy Monitoring"].IsHidden = props["Device Type"].Value == "Dimmer" or props["Device Type"].Value == "Power Strip"
   props["Number Of Outputs"].IsHidden = props["Device Type"].Value ~= "Power Strip"
   return props
 end
@@ -741,13 +741,13 @@ function GetControlLayout(props)
           Type = "Label",
           Text = "Brightness",
           Position = {x, y},
-          Size = {75, 16},
+          Size = {90, 16},
           HTextAlign = "Right",
           FontSize = 12
         }
       )
       layout["Brightness"] = {
-        Position = {x + 75, y},
+        Position = {x + 90, y},
         Size = {100, 16},
         Style = "Text"
       }
@@ -758,13 +758,13 @@ function GetControlLayout(props)
           Type = "Label",
           Text = "Hue",
           Position = {x, y},
-          Size = {75, 16},
+          Size = {90, 16},
           HTextAlign = "Right",
           FontSize = 12
         }
       )
       layout["Hue"] = {
-        Position = {x + 75, y},
+        Position = {x + 90, y},
         Size = {100, 16},
         Style = "Text"
       }
@@ -775,15 +775,49 @@ function GetControlLayout(props)
           Type = "Label",
           Text = "Saturation",
           Position = {x, y},
-          Size = {75, 16},
+          Size = {90, 16},
           HTextAlign = "Right",
           FontSize = 12
         }
       )
       layout["Saturation"] = {
-        Position = {x + 75, y},
+        Position = {x + 90, y},
         Size = {100, 16},
         Style = "Text"
+      }
+      y = y + 20
+      table.insert(
+        graphics,
+        {
+          Type = "Label",
+          Text = "Transition Time",
+          Position = {x, y},
+          Size = {90, 16},
+          HTextAlign = "Right",
+          FontSize = 12
+        }
+      )
+      layout["TransitionTime"] = {
+        Position = {x + 90, y},
+        Size = {100, 16},
+        Style = "Text"
+      }
+      y = y + 20
+      table.insert(
+        graphics,
+        {
+          Type = "Label",
+          Text = "Color Picker",
+          Position = {x, y},
+          Size = {90, 16},
+          HTextAlign = "Right",
+          FontSize = 12
+        }
+      )
+      layout["ColorPicker"] = {
+        Position = {x + 90, y},
+        Size = {100, 16},
+        Style = "ComboBox"
       }
     end
   end
@@ -927,7 +961,6 @@ Controls.Discover.EventHandler = function()
 end 
 Socket = TcpSocket.New()
 PollTimer = Timer.New()
-FaderDebounce = Timer.New()
 PollTime = Properties["Poll Time"].Value
 Buffer = ""
 LastPacketErr = false
@@ -936,6 +969,144 @@ Energy = {}
 
 PollTimer.EventHandler = function()
   DevicePoll()
+end
+
+function ParseLightState(data)
+  -- print(rapidjson.encode(data))
+  if data.transition then
+    Controls.TransitionTime.Value = data.transition
+  end
+  if data.on_off then
+    Controls.On.Boolean = data.on_off == 1
+    Controls.Off.Boolean = data.on_off == 0
+    Controls.Toggle.Boolean = data.on_off == 1
+  end
+  if data.dft_on_state then
+    local state = data.dft_on_state
+    if state.hue then
+      Controls.Hue.Value = state.hue
+    end
+    if state.saturation then
+      Controls.Saturation.Value = state.saturation
+    end
+    if state.brightness then
+      Controls.Brightness.Value = state.brightness
+    end
+  else
+    if data.hue then
+      Controls.Hue.Value = data.hue
+    end
+    if data.saturation then
+      Controls.Saturation.Value = data.saturation
+    end
+    if data.brightness then
+      Controls.Brightness.Value = data.brightness
+    end
+  end
+
+  UpdateColorPicker()
+end
+
+function SetLightState()
+  local toSend = {}
+  toSend["smartlife.iot.lightStrip"] = {}
+  toSend["smartlife.iot.lightStrip"].set_light_state = {}
+  toSend["smartlife.iot.lightStrip"].set_light_state.brightness = math.floor(Controls.Brightness.Value)
+  toSend["smartlife.iot.lightStrip"].set_light_state.on_off = math.floor(Controls.Toggle.Value)
+  toSend["smartlife.iot.lightStrip"].set_light_state.transition = math.floor(Controls.TransitionTime.Value)
+  toSend["smartlife.iot.lightStrip"].set_light_state.hue = math.floor(Controls.Hue.Value)
+  toSend["smartlife.iot.lightStrip"].set_light_state.saturation = math.floor(Controls.Saturation.Value)
+  -- print(rapidjson.encode(toSend))
+  Send(rapidjson.encode(toSend))
+  SendingCommand = false
+end
+CurrentPickerString = Controls.ColorPicker.String or ""
+
+function Unsubscribe(compName)
+  local comp = Component.New(compName)
+  if comp and comp["hsv.hue"] then
+    for _, ctrl in pairs(comp) do
+      if ctrl.EventHandler then
+        ctrl.EventHandler = nil
+      end
+    end
+  end
+end
+
+function GetColorPickers()
+  local choices = {""}
+  for _, comp in pairs(Component.GetComponents()) do
+    if comp.Type == "color_picker" then
+      table.insert(choices, comp.ID)
+    end
+  end
+  Controls.ColorPicker.Choices = choices
+end
+
+function LinkColorPicker()
+  Unsubscribe(CurrentPickerString)
+  CurrentPickerString = Controls.ColorPicker.String
+  local ColorPicker = Component.New(Controls.ColorPicker.String)
+  if ColorPicker then
+    if ColorPicker["hsv.hue"] then
+      ColorPicker["hsv.hue"].EventHandler = function(ctrl)
+        if not ColorPickerFB then
+          -- print("hue:" .. ctrl.Value)
+          Controls.Hue.Value = ctrl.Value
+          ColorPickerTick()
+        end
+      end
+    end
+    if ColorPicker["hsv.saturation"] then
+      ColorPicker["hsv.saturation"].EventHandler = function(ctrl)
+        if not ColorPickerFB then
+          -- print("saturation:" .. ctrl.Value)
+          Controls.Saturation.Value = ctrl.Value
+          ColorPickerTick()
+        end
+      end
+    end
+    if ColorPicker["hsv.value"] then
+      ColorPicker["hsv.value"].EventHandler = function(ctrl)
+        if not ColorPickerFB then
+          -- print("value:" .. ctrl.Value)
+          Controls.Brightness.Value = ctrl.Value
+          ColorPickerTick()
+        end
+      end
+    end
+    UpdateColorPicker()
+  else
+    print("Picker does not exist: " .. Controls.ColorPicker.String)
+  end
+end
+
+function ColorPickerTick()
+  SendingCommand = true
+  ColorPickerDebounce:Stop()
+  ColorPickerDebounce:Start(0.1)
+end
+
+function ColorPickerFBTick()
+  ColorPickerFB = true
+  ColorPickerFBDebounce:Stop()
+  ColorPickerFBDebounce:Start(0.2)
+end
+
+function UpdateColorPicker()
+  local ColorPicker = Component.New(Controls.ColorPicker.String)
+  if ColorPicker and ColorPicker["hsv.hue"] then
+    if
+      ColorPicker["hsv.hue"].Value ~= Controls.Hue.Value or
+        ColorPicker["hsv.saturation"].Value ~= Controls.Saturation.Value or
+        ColorPicker["hsv.value"].Value ~= Controls.Brightness.Value
+     then
+      ColorPicker["hsv.hue"].Value = Controls.Hue.Value
+      ColorPicker["hsv.saturation"].Value = Controls.Saturation.Value
+      ColorPicker["hsv.value"].Value = Controls.Brightness.Value
+      ColorPickerFBTick()
+    end
+  end
 end
 Socket.EventHandler = function(socket, event, err)
   -- print(event)
@@ -973,6 +1144,15 @@ Socket.EventHandler = function(socket, event, err)
         end
       elseif jsonData["smartlife.iot.dimmer"] then -- Dimmer response
         -- Poll()
+      elseif jsonData["smartlife.iot.lightStrip"] then
+        local response = jsonData["smartlife.iot.lightStrip"]
+        if response.set_light_state then
+          ParseLightState(response.set_light_state)
+        elseif response.get_light_state then
+          ParseLightState(response.get_light_state)
+        else
+          print(rapidjson.encode(response))
+        end
       elseif jsonData.emeter then -- Energy info
         if jsonData.emeter.get_realtime and EnergyMonitoring then -- Realtime energy info
           parseEnergyInfo(jsonData.emeter.get_realtime)
@@ -1015,61 +1195,6 @@ end
 Controls["IPAddress"].EventHandler = function(ctrl)
   DeviceDisconnect()
   DeviceConnect()
-end
-
-if isStrip then
-  for p = 1, Properties["Number Of Outputs"].Value do
-    Controls["On"][p].EventHandler = function(ctrl)
-      if Info.deviceId ~= nil and Info.children ~= nil and Info.children[p] ~= nil and Info.children[p].id ~= nil then
-        local childID = #Info.children[p].id > 2 and Info.children[p].id or Info.deviceId .. Info.children[p].id
-        Send('{"context":{"child_ids":["' .. childID .. '"]},"system":{"set_relay_state":{"state":1}}}')
-      end
-    end
-    Controls["Off"][p].EventHandler = function(ctrl)
-      if Info.deviceId ~= nil and Info.children ~= nil and Info.children[p] ~= nil and Info.children[p].id ~= nil then
-        local childID = #Info.children[p].id > 2 and Info.children[p].id or Info.deviceId .. Info.children[p].id
-        Send('{"context":{"child_ids":["' .. childID .. '"]},"system":{"set_relay_state":{"state":0}}}')
-      end
-    end
-    Controls["Toggle"][p].EventHandler = function(ctrl)
-      if Info.deviceId ~= nil and Info.children ~= nil and Info.children[p] ~= nil and Info.children[p].id ~= nil then
-        local childID = #Info.children[p].id > 2 and Info.children[p].id or Info.deviceId .. Info.children[p].id
-        Send(
-          '{"context":{"child_ids":["' ..
-            childID .. '"]},"system":{"set_relay_state":{"state":' .. (ctrl.Boolean and 1 or 0) .. "}}}"
-        )
-      end
-    end
-    Controls["PlugName"][p].EventHandler = function(ctrl)
-      if Info.deviceId ~= nil and Info.children ~= nil and Info.children[p] ~= nil and Info.children[p].id ~= nil then
-        local childID = #Info.children[p].id > 2 and Info.children[p].id or Info.deviceId .. Info.children[p].id
-        Send(
-          '{"context":{"child_ids":["' .. childID .. '"]},"system":{"set_dev_alias":{"alias":"' .. ctrl.String .. '"}}}'
-        )
-      end
-    end
-  end
-else -- single load
-  Controls["On"].EventHandler = function(ctrl)
-    Send('{ "system":{ "set_relay_state":{ "state":1 } } }')
-  end
-  Controls["Off"].EventHandler = function(ctrl)
-    Send('{ "system":{ "set_relay_state":{ "state":0 } } }')
-  end
-  Controls["Toggle"].EventHandler = function(ctrl)
-    Send('{ "system":{ "set_relay_state":{ "state":' .. (ctrl.Boolean and 1 or 0) .. " } } }")
-  end
-end
-if DeviceType == "Dimmer" then
-  Controls["Brightness"].EventHandler = function(ctrl)
-    FaderDebounce:Stop()
-    FaderDebounce:Start(0.1)
-  end
-  FaderDebounce.EventHandler = function()
-    FaderDebounce:Stop()
-    val = math.floor(Controls["Brightness"].Value)
-    Send('{ "smartlife.iot.dimmer":{ "set_brightness":{ "brightness":' .. val .. " } } }")
-  end
 end
 
 Controls["Name"].EventHandler = function(ctrl)
@@ -1224,7 +1349,9 @@ function parseGetInfo(data)
       Controls["Toggle"].Boolean = data.relay_state == 1
     end
   else -- Light Strip
-    --TODO: parse light strip info
+    if data.light_state then
+      ParseLightState(data.light_state)
+    end
   end
 end
 function parseEnergyInfo(data)
@@ -1254,7 +1381,123 @@ end
 
 function Init()
   ClearVariables()
+  if DeviceType == "Light Strip" then
+    GetColorPickers()
+    LinkColorPicker()
+  end
   DeviceConnect()
+end
+
+if DeviceType ~= "Light Strip" then
+  if isStrip then
+    for p = 1, Properties["Number Of Outputs"].Value do
+      Controls["On"][p].EventHandler = function(ctrl)
+        if Info.deviceId ~= nil and Info.children ~= nil and Info.children[p] ~= nil and Info.children[p].id ~= nil then
+          local childID = #Info.children[p].id > 2 and Info.children[p].id or Info.deviceId .. Info.children[p].id
+          Send('{"context":{"child_ids":["' .. childID .. '"]},"system":{"set_relay_state":{"state":1}}}')
+        end
+      end
+      Controls["Off"][p].EventHandler = function(ctrl)
+        if Info.deviceId ~= nil and Info.children ~= nil and Info.children[p] ~= nil and Info.children[p].id ~= nil then
+          local childID = #Info.children[p].id > 2 and Info.children[p].id or Info.deviceId .. Info.children[p].id
+          Send('{"context":{"child_ids":["' .. childID .. '"]},"system":{"set_relay_state":{"state":0}}}')
+        end
+      end
+      Controls["Toggle"][p].EventHandler = function(ctrl)
+        if Info.deviceId ~= nil and Info.children ~= nil and Info.children[p] ~= nil and Info.children[p].id ~= nil then
+          local childID = #Info.children[p].id > 2 and Info.children[p].id or Info.deviceId .. Info.children[p].id
+          Send(
+            '{"context":{"child_ids":["' ..
+              childID .. '"]},"system":{"set_relay_state":{"state":' .. (ctrl.Boolean and 1 or 0) .. "}}}"
+          )
+        end
+      end
+      Controls["PlugName"][p].EventHandler = function(ctrl)
+        if Info.deviceId ~= nil and Info.children ~= nil and Info.children[p] ~= nil and Info.children[p].id ~= nil then
+          local childID = #Info.children[p].id > 2 and Info.children[p].id or Info.deviceId .. Info.children[p].id
+          Send(
+            '{"context":{"child_ids":["' .. childID .. '"]},"system":{"set_dev_alias":{"alias":"' .. ctrl.String .. '"}}}'
+          )
+        end
+      end
+    end
+  else -- single load
+    Controls["On"].EventHandler = function(ctrl)
+      Send('{ "system":{ "set_relay_state":{ "state":1 } } }')
+    end
+    Controls["Off"].EventHandler = function(ctrl)
+      Send('{ "system":{ "set_relay_state":{ "state":0 } } }')
+    end
+    Controls["Toggle"].EventHandler = function(ctrl)
+      Send('{ "system":{ "set_relay_state":{ "state":' .. (ctrl.Boolean and 1 or 0) .. " } } }")
+    end
+  end
+  FaderDebounce = Timer.New()
+  if DeviceType == "Dimmer" then
+    Controls["Brightness"].EventHandler = function(ctrl)
+      FaderDebounce:Stop()
+      FaderDebounce:Start(0.1)
+    end
+    FaderDebounce.EventHandler = function()
+      FaderDebounce:Stop()
+      val = math.floor(Controls["Brightness"].Value)
+      Send('{ "smartlife.iot.dimmer":{ "set_brightness":{ "brightness":' .. val .. " } } }")
+    end
+  end
+else
+  -- On/Off --
+  
+  Controls.On.EventHandler = function(ctrl)
+    Controls.Toggle.Boolean = true
+    SetLightState()
+  end
+  Controls.Off.EventHandler = function(ctrl)
+    Controls.Toggle.Boolean = false
+    SetLightState()
+  end
+  Controls.Toggle.EventHandler = function(ctrl)
+    SetLightState()
+  end
+  
+  -- Debounce --
+  
+  debouncedControls = {
+    -- Controls.TransitionTime,
+    Controls.Brightness,
+    Controls.Hue,
+    Controls.Saturation
+  }
+  debounceTimers = {}
+  
+  for i, ctrl in ipairs(debouncedControls) do
+    debounceTimers[i] = Timer.New()
+    debounceTimers[i].EventHandler = function()
+      debounceTimers[i]:Stop()
+      SetLightState()
+    end
+    ctrl.EventHandler = function()
+      SendingCommand = true
+      debounceTimers[i]:Stop()
+      debounceTimers[i]:Start(0.1)
+      UpdateColorPicker()
+    end
+  end
+  
+  -- Color Picker --
+  
+  ColorPickerDebounce = Timer.New()
+  ColorPickerDebounce.EventHandler = function()
+    ColorPickerDebounce:Stop()
+    SetLightState()
+  end
+  
+  ColorPickerFB = false
+  
+  ColorPickerFBDebounce = Timer.New()
+  ColorPickerFBDebounce.EventHandler = function()
+    ColorPickerFBDebounce:Stop()
+    ColorPickerFB = false
+  end
 end
 
 Init()

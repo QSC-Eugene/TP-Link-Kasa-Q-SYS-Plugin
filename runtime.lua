@@ -25,7 +25,6 @@ StatusState = {OK = 0, COMPROMISED = 1, FAULT = 2, NOTPRESENT = 3, MISSING = 4, 
 --[[ #include "Discovery.lua" ]]
 Socket = TcpSocket.New()
 PollTimer = Timer.New()
-FaderDebounce = Timer.New()
 PollTime = Properties["Poll Time"].Value
 Buffer = ""
 LastPacketErr = false
@@ -35,6 +34,9 @@ Energy = {}
 PollTimer.EventHandler = function()
   DevicePoll()
 end
+
+--[[ #include "LightStipFunctions.lua" ]]
+--[[ #include "ColorPicker.lua" ]]
 Socket.EventHandler = function(socket, event, err)
   -- print(event)
   if event == TcpSocket.Events.Data then
@@ -71,6 +73,15 @@ Socket.EventHandler = function(socket, event, err)
         end
       elseif jsonData["smartlife.iot.dimmer"] then -- Dimmer response
         -- Poll()
+      elseif jsonData["smartlife.iot.lightStrip"] then
+        local response = jsonData["smartlife.iot.lightStrip"]
+        if response.set_light_state then
+          ParseLightState(response.set_light_state)
+        elseif response.get_light_state then
+          ParseLightState(response.get_light_state)
+        else
+          print(rapidjson.encode(response))
+        end
       elseif jsonData.emeter then -- Energy info
         if jsonData.emeter.get_realtime and EnergyMonitoring then -- Realtime energy info
           parseEnergyInfo(jsonData.emeter.get_realtime)
@@ -113,61 +124,6 @@ end
 Controls["IPAddress"].EventHandler = function(ctrl)
   DeviceDisconnect()
   DeviceConnect()
-end
-
-if isStrip then
-  for p = 1, Properties["Number Of Outputs"].Value do
-    Controls["On"][p].EventHandler = function(ctrl)
-      if Info.deviceId ~= nil and Info.children ~= nil and Info.children[p] ~= nil and Info.children[p].id ~= nil then
-        local childID = #Info.children[p].id > 2 and Info.children[p].id or Info.deviceId .. Info.children[p].id
-        Send('{"context":{"child_ids":["' .. childID .. '"]},"system":{"set_relay_state":{"state":1}}}')
-      end
-    end
-    Controls["Off"][p].EventHandler = function(ctrl)
-      if Info.deviceId ~= nil and Info.children ~= nil and Info.children[p] ~= nil and Info.children[p].id ~= nil then
-        local childID = #Info.children[p].id > 2 and Info.children[p].id or Info.deviceId .. Info.children[p].id
-        Send('{"context":{"child_ids":["' .. childID .. '"]},"system":{"set_relay_state":{"state":0}}}')
-      end
-    end
-    Controls["Toggle"][p].EventHandler = function(ctrl)
-      if Info.deviceId ~= nil and Info.children ~= nil and Info.children[p] ~= nil and Info.children[p].id ~= nil then
-        local childID = #Info.children[p].id > 2 and Info.children[p].id or Info.deviceId .. Info.children[p].id
-        Send(
-          '{"context":{"child_ids":["' ..
-            childID .. '"]},"system":{"set_relay_state":{"state":' .. (ctrl.Boolean and 1 or 0) .. "}}}"
-        )
-      end
-    end
-    Controls["PlugName"][p].EventHandler = function(ctrl)
-      if Info.deviceId ~= nil and Info.children ~= nil and Info.children[p] ~= nil and Info.children[p].id ~= nil then
-        local childID = #Info.children[p].id > 2 and Info.children[p].id or Info.deviceId .. Info.children[p].id
-        Send(
-          '{"context":{"child_ids":["' .. childID .. '"]},"system":{"set_dev_alias":{"alias":"' .. ctrl.String .. '"}}}'
-        )
-      end
-    end
-  end
-else -- single load
-  Controls["On"].EventHandler = function(ctrl)
-    Send('{ "system":{ "set_relay_state":{ "state":1 } } }')
-  end
-  Controls["Off"].EventHandler = function(ctrl)
-    Send('{ "system":{ "set_relay_state":{ "state":0 } } }')
-  end
-  Controls["Toggle"].EventHandler = function(ctrl)
-    Send('{ "system":{ "set_relay_state":{ "state":' .. (ctrl.Boolean and 1 or 0) .. " } } }")
-  end
-end
-if DeviceType == "Dimmer" then
-  Controls["Brightness"].EventHandler = function(ctrl)
-    FaderDebounce:Stop()
-    FaderDebounce:Start(0.1)
-  end
-  FaderDebounce.EventHandler = function()
-    FaderDebounce:Stop()
-    val = math.floor(Controls["Brightness"].Value)
-    Send('{ "smartlife.iot.dimmer":{ "set_brightness":{ "brightness":' .. val .. " } } }")
-  end
 end
 
 Controls["Name"].EventHandler = function(ctrl)
@@ -322,7 +278,9 @@ function parseGetInfo(data)
       Controls["Toggle"].Boolean = data.relay_state == 1
     end
   else -- Light Strip
-    --TODO: parse light strip info
+    if data.light_state then
+      ParseLightState(data.light_state)
+    end
   end
 end
 function parseEnergyInfo(data)
@@ -352,7 +310,17 @@ end
 
 function Init()
   ClearVariables()
+  if DeviceType == "Light Strip" then
+    GetColorPickers()
+    LinkColorPicker()
+  end
   DeviceConnect()
+end
+
+if DeviceType ~= "Light Strip" then
+  --[[ #include "DimmerSwitch.lua" ]]
+else
+  --[[ #include "LightStrip.lua" ]]
 end
 
 Init()

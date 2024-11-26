@@ -356,13 +356,13 @@ elseif current_page == 2 then -- Control
         Type = "Label",
         Text = "Brightness",
         Position = {x, y},
-        Size = {75, 16},
+        Size = {90, 16},
         HTextAlign = "Right",
         FontSize = 12
       }
     )
     layout["Brightness"] = {
-      Position = {x + 75, y},
+      Position = {x + 90, y},
       Size = {100, 16},
       Style = "Text"
     }
@@ -373,13 +373,13 @@ elseif current_page == 2 then -- Control
         Type = "Label",
         Text = "Hue",
         Position = {x, y},
-        Size = {75, 16},
+        Size = {90, 16},
         HTextAlign = "Right",
         FontSize = 12
       }
     )
     layout["Hue"] = {
-      Position = {x + 75, y},
+      Position = {x + 90, y},
       Size = {100, 16},
       Style = "Text"
     }
@@ -390,15 +390,49 @@ elseif current_page == 2 then -- Control
         Type = "Label",
         Text = "Saturation",
         Position = {x, y},
-        Size = {75, 16},
+        Size = {90, 16},
         HTextAlign = "Right",
         FontSize = 12
       }
     )
     layout["Saturation"] = {
-      Position = {x + 75, y},
+      Position = {x + 90, y},
       Size = {100, 16},
       Style = "Text"
+    }
+    y = y + 20
+    table.insert(
+      graphics,
+      {
+        Type = "Label",
+        Text = "Transition Time",
+        Position = {x, y},
+        Size = {90, 16},
+        HTextAlign = "Right",
+        FontSize = 12
+      }
+    )
+    layout["TransitionTime"] = {
+      Position = {x + 90, y},
+      Size = {100, 16},
+      Style = "Text"
+    }
+    y = y + 20
+    table.insert(
+      graphics,
+      {
+        Type = "Label",
+        Text = "Color Picker",
+        Position = {x, y},
+        Size = {90, 16},
+        HTextAlign = "Right",
+        FontSize = 12
+      }
+    )
+    layout["ColorPicker"] = {
+      Position = {x + 90, y},
+      Size = {100, 16},
+      Style = "ComboBox"
     }
   end
 end
