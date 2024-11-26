@@ -47,3 +47,14 @@ function SetLightState()
   Send(rapidjson.encode(toSend))
   SendingCommand = false
 end
+
+function SetLightEffect(effectIndex)
+  if effectIndex and Effects[effectIndex] then
+    Send('{"smartlife.iot.lighting_effect":{"set_lighting_effect":'..Effects[effectIndex]..'}}')
+  end
+end
+
+function ParseLightEffect(data)
+  -- print(rapidjson.encode(data))
+  --TODO
+end

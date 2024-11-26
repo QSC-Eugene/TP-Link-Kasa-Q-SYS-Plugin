@@ -1,0 +1,5 @@
+-- Copied from https://github.com/steveredden/homebridge-kasa-lightstrip/tree/main/lib/light-effects
+Effects = {
+  Aurora = '{"custom":0,"id":"xqUxDhbAhNLqulcuRMyPBmVGyTOyEMEu","brightness":100,"name":"Aurora","segments":[0],"expansion_strategy":1,"enable":1,"type":"sequence","duration":0,"transition":1500,"direction":4,"spread":7,"repeat_times":0,"sequence":[[120,100,100],[240,100,100],[260,100,100],[280,100,100]]}',
+  BubblingCauldron = '{"custom":0,"id":"tIwTRQBqJpeNKbrtBMFCgkdPTbAQGfRP","brightness":100,"name":"Bubbling Cauldron","segments":[0],"expansion_strategy":1,"enable":1,"type":"random","hue_range":[100,270],"saturation_range":[80,100],"brightness_range":[50,100],"duration":0,"transition":200,"init_states":[[270,100,100]],"fadeoff":1000,"random_seed":24,"backgrounds":[[270,40,50]]}',
+}

@@ -51,3 +51,17 @@ ColorPickerFBDebounce.EventHandler = function()
   ColorPickerFBDebounce:Stop()
   ColorPickerFB = false
 end
+
+-- Effects --
+
+--[[ #include "LightEffects.lua" ]]
+local EffectChoices = {""}
+for k, v in pairs(Effects) do
+  table.insert(EffectChoices, k)
+end
+table.sort(EffectChoices)
+Controls.Effect.Choices = EffectChoices
+
+Controls.Effect.EventHandler = function(ctrl)
+  SetLightEffect(ctrl.String)
+end

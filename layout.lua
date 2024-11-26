@@ -417,7 +417,7 @@ elseif current_page == 2 then -- Control
       Size = {100, 16},
       Style = "Text"
     }
-    y = y + 20
+    y = y + 40
     table.insert(
       graphics,
       {
@@ -430,6 +430,40 @@ elseif current_page == 2 then -- Control
       }
     )
     layout["ColorPicker"] = {
+      Position = {x + 90, y},
+      Size = {100, 16},
+      Style = "ComboBox"
+    }
+    y = y + 20
+    table.insert(
+      graphics,
+      {
+        Type = "Label",
+        Text = "Effect Active",
+        Position = {x, y},
+        Size = {90, 16},
+        HTextAlign = "Right",
+        FontSize = 12
+      }
+    )
+    layout["EffectActive"] = {
+      Position = {x + 90, y},
+      Size = {16, 16},
+      Style = "Led"
+    }
+    y = y + 20
+    table.insert(
+      graphics,
+      {
+        Type = "Label",
+        Text = "Effect",
+        Position = {x, y},
+        Size = {90, 16},
+        HTextAlign = "Right",
+        FontSize = 12
+      }
+    )
+    layout["Effect"] = {
       Position = {x + 90, y},
       Size = {100, 16},
       Style = "ComboBox"

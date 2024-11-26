@@ -244,5 +244,24 @@ if props["Device Type"].Value == "Light Strip" then
       PinStyle = "Both",
       UserPin = true
     }
-  )   
+  ) 
+  table.insert(
+    ctrls,
+    {
+      Name = "EffectActive",
+      ControlType = "Indicator",
+      IndicatorType = "Led",
+      PinStyle = "Output",
+      UserPin = true
+    }
+  )
+  table.insert(
+    ctrls,
+    {
+      Name = "Effect",
+      ControlType = "Text",
+      PinStyle = "Both",
+      UserPin = true
+    }
+  )  
 end
