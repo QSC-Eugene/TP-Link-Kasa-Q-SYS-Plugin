@@ -1,8 +1,8 @@
 PluginInfo = {
   Name = "TP-Link Kasa",
   Author = "Eugene Dunn",
-  BuildVersion = "0.6.3.2",
-  Version = "0.6.3.2",
+  BuildVersion = "0.6.3.3",
+  Version = "0.6.3.3",
   Id = "ae99e75d-3c3f-4f13-97eb-7443f56cf23e",
   Description = ""
 }
@@ -1084,7 +1084,7 @@ function ParseLightEffect(data)
   -- print(rapidjson.encode(data))
   --TODO
 end
-CurrentPickerString = Controls.ColorPicker.String or ""
+CurrentPickerString = Controls.ColorPicker and Controls.ColorPicker.String or ""
 
 function Unsubscribe(compName)
   local comp = Component.New(compName)

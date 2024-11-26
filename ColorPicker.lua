@@ -1,4 +1,4 @@
-CurrentPickerString = Controls.ColorPicker.String or ""
+CurrentPickerString = Controls.ColorPicker and Controls.ColorPicker.String or ""
 
 function Unsubscribe(compName)
   local comp = Component.New(compName)
