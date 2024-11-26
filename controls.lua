@@ -161,7 +161,7 @@ table.insert(
     Count = outputCount
   }
 )
-if props["Device Type"].Value == "Dimmer" or props["Device Type"].Value == "Light Strip" then
+if props["Device Type"].Value == "Dimmer" then
   table.insert(
     ctrls,
     {
@@ -186,4 +186,63 @@ if props["Device Type"].Value == "Power Strip" then
       Count = outputCount
     }
   )
+end
+if props["Device Type"].Value == "Light Strip" then
+  table.insert(
+    ctrls,
+    {
+      Name = "Brightness",
+      ControlType = "Knob",
+      ControlUnit = "Integer",
+      Min = 1,
+      Max = 100,
+      PinStyle = "Both",
+      UserPin = true
+    }
+  )
+  table.insert(
+    ctrls,
+    {
+      Name = "Hue",
+      ControlType = "Knob",
+      ControlUnit = "Integer",
+      Min = 1,
+      Max = 360,
+      PinStyle = "Both",
+      UserPin = true
+    }
+  )
+  table.insert(
+    ctrls,
+    {
+      Name = "Saturation",
+      ControlType = "Knob",
+      ControlUnit = "Integer",
+      Min = 1,
+      Max = 100,
+      PinStyle = "Both",
+      UserPin = true
+    }
+  )
+  table.insert(
+    ctrls,
+    {
+      Name = "TransitionTime", -- in milliseconds
+      ControlType = "Knob",
+      ControlUnit = "Integer",
+      Min = 0,
+      Max = 10000,
+      PinStyle = "Both",
+      UserPin = true
+    }
+  ) 
+  table.insert(
+    ctrls,
+    {
+      Name = "ColorPicker",
+      ControlType = "Text",
+      PinStyle = "Both",
+      UserPin = true
+    }
+  )   
 end
