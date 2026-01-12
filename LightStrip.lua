@@ -2,14 +2,14 @@
 
 Controls.On.EventHandler = function(ctrl)
   Controls.Toggle.Boolean = true
-  SetLightState()
+  SetLightStateOnOff()
 end
 Controls.Off.EventHandler = function(ctrl)
   Controls.Toggle.Boolean = false
-  SetLightState()
+  SetLightStateOnOff()
 end
 Controls.Toggle.EventHandler = function(ctrl)
-  SetLightState()
+  SetLightStateOnOff()
 end
 
 -- Debounce --
@@ -26,7 +26,11 @@ for i, ctrl in ipairs(debouncedControls) do
   debounceTimers[i] = Timer.New()
   debounceTimers[i].EventHandler = function()
     debounceTimers[i]:Stop()
-    SetLightState()
+    if ctrl == Controls.Brightness then
+      SetLightBrightness()
+    else
+      SetLightState()
+    end
   end
   ctrl.EventHandler = function()
     SendingCommand = true

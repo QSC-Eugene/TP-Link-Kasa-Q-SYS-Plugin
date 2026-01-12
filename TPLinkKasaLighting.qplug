@@ -1,8 +1,8 @@
 PluginInfo = {
   Name = "TP-Link Kasa",
   Author = "Eugene Dunn",
-  BuildVersion = "0.6.3.3",
-  Version = "0.6.3.3",
+  BuildVersion = "0.6.4.2",
+  Version = "0.6.4.2",
   Id = "ae99e75d-3c3f-4f13-97eb-7443f56cf23e",
   Description = ""
 }
@@ -1069,11 +1069,34 @@ function SetLightState()
   toSend["smartlife.iot.lightStrip"].set_light_state.transition = math.floor(Controls.TransitionTime.Value)
   toSend["smartlife.iot.lightStrip"].set_light_state.hue = math.floor(Controls.Hue.Value)
   toSend["smartlife.iot.lightStrip"].set_light_state.saturation = math.floor(Controls.Saturation.Value)
-  -- print(rapidjson.encode(toSend))
   Send(rapidjson.encode(toSend))
   SendingCommand = false
 end
 
+function SetLightStateOnOff()
+local toSend = {}
+toSend["smartlife.iot.lightStrip"] = {}
+toSend["smartlife.iot.lightStrip"].set_light_state = {}
+-- toSend["smartlife.iot.lightStrip"].set_light_state.brightness = math.floor(Controls.Brightness.Value)
+toSend["smartlife.iot.lightStrip"].set_light_state.on_off = math.floor(Controls.Toggle.Value)
+-- toSend["smartlife.iot.lightStrip"].set_light_state.transition = math.floor(Controls.TransitionTime.Value)
+-- toSend["smartlife.iot.lightStrip"].set_light_state.hue = math.floor(Controls.Hue.Value)
+-- toSend["smartlife.iot.lightStrip"].set_light_state.saturation = math.floor(Controls.Saturation.Value)
+Send(rapidjson.encode(toSend))
+SendingCommand = false
+end
+function SetLightBrightness()
+local toSend = {}
+toSend["smartlife.iot.lightStrip"] = {}
+toSend["smartlife.iot.lightStrip"].set_light_state = {}
+toSend["smartlife.iot.lightStrip"].set_light_state.brightness = math.floor(Controls.Brightness.Value)
+-- toSend["smartlife.iot.lightStrip"].set_light_state.on_off = math.floor(Controls.Toggle.Value)
+-- toSend["smartlife.iot.lightStrip"].set_light_state.transition = math.floor(Controls.TransitionTime.Value)
+-- toSend["smartlife.iot.lightStrip"].set_light_state.hue = math.floor(Controls.Hue.Value)
+-- toSend["smartlife.iot.lightStrip"].set_light_state.saturation = math.floor(Controls.Saturation.Value)
+Send(rapidjson.encode(toSend))
+SendingCommand = false
+end
 function SetLightEffect(effectIndex)
   if effectIndex and Effects[effectIndex] then
     Send('{"smartlife.iot.lighting_effect":{"set_lighting_effect":'..Effects[effectIndex]..'}}')
@@ -1513,14 +1536,14 @@ else
   
   Controls.On.EventHandler = function(ctrl)
     Controls.Toggle.Boolean = true
-    SetLightState()
+    SetLightStateOnOff()
   end
   Controls.Off.EventHandler = function(ctrl)
     Controls.Toggle.Boolean = false
-    SetLightState()
+    SetLightStateOnOff()
   end
   Controls.Toggle.EventHandler = function(ctrl)
-    SetLightState()
+    SetLightStateOnOff()
   end
   
   -- Debounce --
@@ -1537,7 +1560,11 @@ else
     debounceTimers[i] = Timer.New()
     debounceTimers[i].EventHandler = function()
       debounceTimers[i]:Stop()
-      SetLightState()
+      if ctrl == Controls.Brightness then
+        SetLightBrightness()
+      else
+        SetLightState()
+      end
     end
     ctrl.EventHandler = function()
       SendingCommand = true
