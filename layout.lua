@@ -39,7 +39,7 @@ elseif current_page == 1 then --Setup
   layout["IPAddress"] = {
     Position = {x, y},
     Size = {200, 16},
-    Style = "Text",
+    Style = "Text"
   }
   x = 0
   y = y + 20
@@ -58,7 +58,7 @@ elseif current_page == 1 then --Setup
   layout["Status"] = {
     Position = {x, y},
     Size = {200, 16},
-    Style = "Text",
+    Style = "Text"
   }
   x = 0
   y = y + 20
@@ -77,7 +77,7 @@ elseif current_page == 1 then --Setup
   layout["Name"] = {
     Position = {x, y},
     Size = {200, 16},
-    Style = "Text",
+    Style = "Text"
   }
   x = 0
   y = y + 20
@@ -96,7 +96,7 @@ elseif current_page == 1 then --Setup
   layout["Model"] = {
     Position = {x, y},
     Size = {200, 16},
-    Style = "Text",
+    Style = "Text"
   }
   x = 0
   y = y + 20
@@ -115,7 +115,7 @@ elseif current_page == 1 then --Setup
   layout["MACAddress"] = {
     Position = {x, y},
     Size = {200, 16},
-    Style = "Text",
+    Style = "Text"
   }
   x = 0
   y = y + 20
@@ -134,7 +134,7 @@ elseif current_page == 1 then --Setup
   layout["DeviceFirmware"] = {
     Position = {x, y},
     Size = {200, 16},
-    Style = "Text",
+    Style = "Text"
   }
   x = 0
   y = y + 20
@@ -153,79 +153,175 @@ elseif current_page == 1 then --Setup
   layout["Rssi"] = {
     Position = {x, y},
     Size = {200, 16},
-    Style = "Text",
+    Style = "Text"
   }
-elseif current_page == 2 then -- Loads
-  if props["Device Type"].Value == "Strip" then
-    for p = 1, props["Number Of Outputs"].Value do
-      x = 0
-      table.insert(
-        graphics,
-        {
-          Type = "Label",
-          Text = p..":",
+elseif current_page == 2 then -- Control
+  if props["Device Type"].Value ~= "Light Strip" then
+    if props["Device Type"].Value == "Power Strip" then
+      for p = 1, props["Number Of Outputs"].Value do
+        x = 0
+        table.insert(
+          graphics,
+          {
+            Type = "Label",
+            Text = p .. ":",
+            Position = {x, y},
+            Size = {24, 16},
+            FontSize = 12,
+            HTextAlign = "Right"
+          }
+        )
+        x = x + 24
+        layout["PlugName " .. p] = {
           Position = {x, y},
-          Size = {24,16},
-          FontSize = 12,
-          HTextAlign = "Right"
+          Size = {50, 16},
+          Style = "Text"
         }
-      )
-      x = x + 24
-      layout["PlugName "..p] = {
+        x = x + 50
+        layout["Off " .. p] = {
+          Position = {x, y},
+          Size = {36, 16},
+          Style = "Button",
+          ButtonStyle = "Toggle",
+          Legend = "Off",
+          FontSize = 9
+        }
+        x = x + 36
+        layout["On " .. p] = {
+          Position = {x, y},
+          Size = {36, 16},
+          Style = "Button",
+          ButtonStyle = "Toggle",
+          Legend = "On",
+          FontSize = 9
+        }
+        x = x + 36
+        layout["Toggle " .. p] = {
+          Position = {x, y},
+          Size = {36, 16},
+          Style = "Button",
+          ButtonStyle = "Toggle",
+          Legend = "Toggle",
+          FontSize = 9
+        }
+        if props["Energy Monitoring"].Value then
+          x = x + 36
+          layout["Voltage " .. p] = {
+            Position = {x, y},
+            Size = {50, 16},
+            Style = "Text"
+          }
+          x = x + 50
+          layout["Current " .. p] = {
+            Position = {x, y},
+            Size = {50, 16},
+            Style = "Text"
+          }
+          x = x + 50
+          layout["Power " .. p] = {
+            Position = {x, y},
+            Size = {50, 16},
+            Style = "Text"
+          }
+        end
+        y = y + 20
+      end
+    else
+      layout["Off"] = {
         Position = {x, y},
-        Size = {50, 16},
-        Style = "Text",
-      }
-      x = x + 50
-      layout["Off "..p] = {
-        Position = {x, y},
-        Size = {36,16},
+        Size = {60, 40},
         Style = "Button",
         ButtonStyle = "Toggle",
         Legend = "Off",
-        FontSize = 9
+        FontSize = 14
       }
-      x = x + 36
-      layout["On "..p] = {
+      x = x + 64
+      layout["On"] = {
         Position = {x, y},
-        Size = {36,16},
+        Size = {60, 40},
         Style = "Button",
         ButtonStyle = "Toggle",
         Legend = "On",
-        FontSize = 9
+        FontSize = 14
       }
-      x = x + 36
-      layout["Toggle "..p] = {
+      x = x + 64
+      layout["Toggle"] = {
         Position = {x, y},
-        Size = {36,16},
+        Size = {60, 40},
         Style = "Button",
         ButtonStyle = "Toggle",
         Legend = "Toggle",
-        FontSize = 9
+        FontSize = 14
       }
+      x = 0
+      y = y + 64
+      if props["Device Type"].Value == "Dimmer" then
+        layout["Brightness"] = {
+          Position = {x, y},
+          Size = {188, 40},
+          Style = "Fader"
+        }
+        y = y + 44
+      end
       if props["Energy Monitoring"].Value then
-        x = x + 36
-        layout["Voltage "..p] = {
-          Position = {x, y},
-          Size = {50, 16},
-          Style = "Text",
-        }
+        table.insert(
+          graphics,
+          {
+            Type = "Label",
+            Text = "Voltage:",
+            Position = {x, y},
+            Size = {50, 16},
+            HTextAlign = "Right",
+            FontSize = 12
+          }
+        )
         x = x + 50
-        layout["Current "..p] = {
+        layout["Voltage"] = {
           Position = {x, y},
           Size = {50, 16},
-          Style = "Text",
+          Style = "Text"
         }
+        x = 0
+        y = y + 20
+        table.insert(
+          graphics,
+          {
+            Type = "Label",
+            Text = "Current:",
+            Position = {x, y},
+            Size = {50, 16},
+            HTextAlign = "Right",
+            FontSize = 12
+          }
+        )
         x = x + 50
-        layout["Power "..p] = {
+        layout["Current"] = {
           Position = {x, y},
           Size = {50, 16},
-          Style = "Text",
+          Style = "Text"
+        }
+        x = 0
+        y = y + 20
+        table.insert(
+          graphics,
+          {
+            Type = "Label",
+            Text = "Power:",
+            Position = {x, y},
+            Size = {50, 16},
+            HTextAlign = "Right",
+            FontSize = 12
+          }
+        )
+        x = x + 50
+        layout["Power"] = {
+          Position = {x, y},
+          Size = {50, 16},
+          Style = "Text"
         }
       end
-      y = y + 20
     end
-  else
+  else -- Light Strips
     layout["Off"] = {
       Position = {x, y},
       Size = {60, 40},
@@ -253,76 +349,124 @@ elseif current_page == 2 then -- Loads
       FontSize = 14
     }
     x = 0
-    y = y + 64
-    if props["Device Type"].Value == "Dimmer" then
-      layout["Brightness"] = {
+    y = y + 44
+    table.insert(
+      graphics,
+      {
+        Type = "Label",
+        Text = "Brightness",
         Position = {x, y},
-        Size = {188, 40},
-        Style = "Fader",
+        Size = {90, 16},
+        HTextAlign = "Right",
+        FontSize = 12
       }
-      y = y + 44
-    end
-    if props["Energy Monitoring"].Value then
-      table.insert(
-        graphics,
-        {
-          Type = "Label",
-          Text = "Voltage:",
-          Position = {x, y},
-          Size = {50, 16},
-          HTextAlign = "Right",
-          FontSize = 12
-        }
-      )
-      x = x + 50
-      layout["Voltage"] = {
+    )
+    layout["Brightness"] = {
+      Position = {x + 90, y},
+      Size = {100, 16},
+      Style = "Text"
+    }
+    y = y + 20
+    table.insert(
+      graphics,
+      {
+        Type = "Label",
+        Text = "Hue",
         Position = {x, y},
-        Size = {50, 16},
-        Style = "Text",
+        Size = {90, 16},
+        HTextAlign = "Right",
+        FontSize = 12
       }
-      x = 0
-      y = y + 20
-      table.insert(
-        graphics,
-        {
-          Type = "Label",
-          Text = "Current:",
-          Position = {x, y},
-          Size = {50, 16},
-          HTextAlign = "Right",
-          FontSize = 12
-        }
-      )
-      x = x + 50
-      layout["Current"] = {
+    )
+    layout["Hue"] = {
+      Position = {x + 90, y},
+      Size = {100, 16},
+      Style = "Text"
+    }
+    y = y + 20
+    table.insert(
+      graphics,
+      {
+        Type = "Label",
+        Text = "Saturation",
         Position = {x, y},
-        Size = {50, 16},
-        Style = "Text",
+        Size = {90, 16},
+        HTextAlign = "Right",
+        FontSize = 12
       }
-      x = 0
-      y = y + 20
-      table.insert(
-        graphics,
-        {
-          Type = "Label",
-          Text = "Power:",
-          Position = {x, y},
-          Size = {50, 16},
-          HTextAlign = "Right",
-          FontSize = 12
-        }
-      )
-      x = x + 50
-      layout["Power"] = {
+    )
+    layout["Saturation"] = {
+      Position = {x + 90, y},
+      Size = {100, 16},
+      Style = "Text"
+    }
+    y = y + 20
+    table.insert(
+      graphics,
+      {
+        Type = "Label",
+        Text = "Transition Time",
         Position = {x, y},
-        Size = {50, 16},
-        Style = "Text",
+        Size = {90, 16},
+        HTextAlign = "Right",
+        FontSize = 12
       }
-
-    end
+    )
+    layout["TransitionTime"] = {
+      Position = {x + 90, y},
+      Size = {100, 16},
+      Style = "Text"
+    }
+    y = y + 40
+    table.insert(
+      graphics,
+      {
+        Type = "Label",
+        Text = "Color Picker",
+        Position = {x, y},
+        Size = {90, 16},
+        HTextAlign = "Right",
+        FontSize = 12
+      }
+    )
+    layout["ColorPicker"] = {
+      Position = {x + 90, y},
+      Size = {100, 16},
+      Style = "ComboBox"
+    }
+    y = y + 20
+    table.insert(
+      graphics,
+      {
+        Type = "Label",
+        Text = "Effect Active",
+        Position = {x, y},
+        Size = {90, 16},
+        HTextAlign = "Right",
+        FontSize = 12
+      }
+    )
+    layout["EffectActive"] = {
+      Position = {x + 90, y},
+      Size = {16, 16},
+      Style = "Led"
+    }
+    y = y + 20
+    table.insert(
+      graphics,
+      {
+        Type = "Label",
+        Text = "Effect",
+        Position = {x, y},
+        Size = {90, 16},
+        HTextAlign = "Right",
+        FontSize = 12
+      }
+    )
+    layout["Effect"] = {
+      Position = {x + 90, y},
+      Size = {100, 16},
+      Style = "ComboBox"
+    }
   end
-
-  
-  
-
 end

@@ -1,8 +1,9 @@
 rapidjson = require("rapidjson")
 
 DeviceType = Properties["Device Type"].Value
-isStrip = DeviceType == "Strip"
-EnergyMonitoring = DeviceType ~= "Dimmer" and Properties["Energy Monitoring"].Value or false
+isStrip = DeviceType == "Power Strip"
+EnergyMonitoring =
+  (DeviceType ~= "Dimmer" or DeviceType ~= "Light Strip") and Properties["Energy Monitoring"].Value or false
 
 DebugTx, DebugRx, DebugFunction = false, false, false
 DebugPrint = Properties["Debug Print"].Value
@@ -24,7 +25,6 @@ StatusState = {OK = 0, COMPROMISED = 1, FAULT = 2, NOTPRESENT = 3, MISSING = 4, 
 --[[ #include "Discovery.lua" ]]
 Socket = TcpSocket.New()
 PollTimer = Timer.New()
-FaderDebounce = Timer.New()
 PollTime = Properties["Poll Time"].Value
 Buffer = ""
 LastPacketErr = false
@@ -34,19 +34,26 @@ Energy = {}
 PollTimer.EventHandler = function()
   DevicePoll()
 end
+
+--[[ #include "LightStipFunctions.lua" ]]
+--[[ #include "ColorPicker.lua" ]]
 Socket.EventHandler = function(socket, event, err)
   -- print(event)
   if event == TcpSocket.Events.Data then
     -- print("got " .. socket.BufferLength .. " bytes")
     Buffer = Buffer .. socket:Read(socket.BufferLength)
     local jsonData, err = nil, nil
-    local success, pcallError = pcall(function() jsonData, err = decode(Buffer) end)
+    local success, pcallError =
+      pcall(
+      function()
+        jsonData, err = decode(Buffer)
+      end
+    )
     if not success then
       print("Error: " .. pcallError)
       print("Buffer Length: " .. #Buffer)
       Buffer = ""
       LastPacketErr = false
-    
     elseif err == nil then
       -- print("JSON OK, " .. #Buffer .. " bytes")
       Buffer = ""
@@ -66,6 +73,15 @@ Socket.EventHandler = function(socket, event, err)
         end
       elseif jsonData["smartlife.iot.dimmer"] then -- Dimmer response
         -- Poll()
+      elseif jsonData["smartlife.iot.lightStrip"] then
+        local response = jsonData["smartlife.iot.lightStrip"]
+        if response.set_light_state then
+          ParseLightState(response.set_light_state)
+        elseif response.get_light_state then
+          ParseLightState(response.get_light_state)
+        else
+          print(rapidjson.encode(response))
+        end
       elseif jsonData.emeter then -- Energy info
         if jsonData.emeter.get_realtime and EnergyMonitoring then -- Realtime energy info
           parseEnergyInfo(jsonData.emeter.get_realtime)
@@ -76,15 +92,9 @@ Socket.EventHandler = function(socket, event, err)
       end
     elseif not LastPacketErr then
       LastPacketErr = true
-      -- print("incomplete Packet")
     else
-      -- end
-      -- Controls["Device_" .. x .. "_Status"].Value = 2 --fault
-      -- Controls["Device_" .. x .. "_Status"].String = "JSON Error: ", err
-      -- print("JSON Err:", err)
       print("strikeout")
       print(decodeToString(Buffer))
-      -- if err:find("The document root must not be followed by other values") then
       Buffer = ""
       LastPacketErr = false
     end
@@ -100,141 +110,24 @@ Socket.EventHandler = function(socket, event, err)
   end
 end
 
+function Send(toSend)
+  if Socket.IsConnected then
+    if DebugTx then
+      print("TX: " .. toSend)
+    end
+    Socket:Write(encode(toSend))
+  else
+    print("Socket not connected, cannot send:" .. toSend)
+  end
+end
+
 Controls["IPAddress"].EventHandler = function(ctrl)
   DeviceDisconnect()
   DeviceConnect()
 end
-if isStrip then
-  for p = 1, Properties["Number Of Outputs"].Value do
-    Controls["On"][p].EventHandler = function(ctrl)
-      if
-        Socket.IsConnected and Info.deviceId ~= nil and Info.children ~= nil and Info.children[p] ~= nil and
-          Info.children[p].id ~= nil
-       then
-        local childID = #Info.children[p].id > 2 and Info.children[p].id or Info.deviceId .. Info.children[p].id
-        if DebugTx then
-          print(
-            "Plug " ..
-              p .. " TX: " .. '{"context":{"child_ids":["' .. childID .. '"]},"system":{"set_relay_state":{"state":1}}}'
-          )
-        end
-        Socket:Write(encode('{"context":{"child_ids":["' .. childID .. '"]},"system":{"set_relay_state":{"state":1}}}'))
-      end
-    end
-    Controls["Off"][p].EventHandler = function(ctrl)
-      if
-        Socket.IsConnected and Info.deviceId ~= nil and Info.children ~= nil and Info.children[p] ~= nil and
-          Info.children[p].id ~= nil
-       then
-        local childID = #Info.children[p].id > 2 and Info.children[p].id or Info.deviceId .. Info.children[p].id
-        if DebugTx then
-          print(
-            "Plug " ..
-              p .. " TX: " .. '{"context":{"child_ids":["' .. childID .. '"]},"system":{"set_relay_state":{"state":0}}}'
-          )
-        end
-        Socket:Write(encode('{"context":{"child_ids":["' .. childID .. '"]},"system":{"set_relay_state":{"state":0}}}'))
-      end
-    end
-    Controls["Toggle"][p].EventHandler = function(ctrl)
-      if
-        Socket.IsConnected and Info.deviceId ~= nil and Info.children ~= nil and Info.children[p] ~= nil and
-          Info.children[p].id ~= nil
-       then
-        local childID = #Info.children[p].id > 2 and Info.children[p].id or Info.deviceId .. Info.children[p].id
-        if DebugTx then
-          print(
-            "Plug " ..
-              p ..
-                " TX: " ..
-                  '{"context":{"child_ids":["' ..
-                    childID .. '"]},"system":{"set_relay_state":{"state":' .. (ctrl.Boolean and 1 or 0) .. "}}}"
-          )
-        end
-        Socket:Write(
-          encode(
-            '{"context":{"child_ids":["' ..
-              childID .. '"]},"system":{"set_relay_state":{"state":' .. (ctrl.Boolean and 1 or 0) .. "}}}"
-          )
-        )
-      end
-    end
-    Controls["PlugName"][p].EventHandler = function(ctrl)
-      if
-        Socket.IsConnected and Info.deviceId ~= nil and Info.children ~= nil and Info.children[p] ~= nil and
-          Info.children[p].id ~= nil
-       then
-        local childID = #Info.children[p].id > 2 and Info.children[p].id or Info.deviceId .. Info.children[p].id
-        if DebugTx then
-          print(
-            "Plug " ..
-              p ..
-                " TX: " ..
-                  '{"context":{"child_ids":["' ..
-                    childID .. '"]},"system":{"set_dev_alias":{"alias":"' .. ctrl.String .. '"}}}'
-          )
-        end
-        Socket:Write(
-          encode(
-            '{"context":{"child_ids":["' ..
-              childID .. '"]},"system":{"set_dev_alias":{"alias":"' .. ctrl.String .. '"}}}'
-          )
-        )
-      end
-    end
-  end
-else -- single load
-  Controls["On"].EventHandler = function(ctrl)
-    if Socket.IsConnected then
-      if DebugTx then
-        print("TX: " .. '{ "system":{ "set_relay_state":{ "state":1 } } }')
-      end
-      Socket:Write(encode('{ "system":{ "set_relay_state":{ "state":1 } } }'))
-    end
-  end
-  Controls["Off"].EventHandler = function(ctrl)
-    if Socket.IsConnected then
-      if DebugTx then
-        print("TX: " .. '{ "system":{ "set_relay_state":{ "state":0 } } }')
-      end
-      Socket:Write(encode('{ "system":{ "set_relay_state":{ "state":0 } } }'))
-    end
-  end
-  Controls["Toggle"].EventHandler = function(ctrl)
-    if Socket.IsConnected then
-      if DebugTx then
-        print(
-          "Device" ..
-            x .. " TX: " .. '{ "system":{ "set_relay_state":{ "state":' .. (ctrl.Boolean and 1 or 0) .. " } } }"
-        )
-      end
-      Socket:Write(encode('{ "system":{ "set_relay_state":{ "state":' .. (ctrl.Boolean and 1 or 0) .. " } } }"))
-    end
-  end
-end
-if DeviceType == "Dimmer" then
-  Controls["Brightness"].EventHandler = function(ctrl)
-    FaderDebounce:Stop()
-    FaderDebounce:Start(0.1)
-  end
-  FaderDebounce.EventHandler = function()
-    FaderDebounce:Stop()
-    if Socket.IsConnected then
-      val = math.floor(Controls["Brightness"].Value)
-      if DebugTx then
-        print("TX: " .. '{ "smartlife.iot.dimmer":{ "set_brightness":{ "brightness":' .. val .. " } } }")
-      end
-      Socket:Write(encode('{ "smartlife.iot.dimmer":{ "set_brightness":{ "brightness":' .. val .. " } } }"))
-    end
-  end
-end
+
 Controls["Name"].EventHandler = function(ctrl)
-  if Socket.IsConnected then
-    if DebugTx then
-      print("TX: " .. '{ "system":{ "set_dev_alias":{ "alias":"' .. ctrl.String .. '" } } }')
-    end
-    Socket:Write(encode('{ "system":{ "set_dev_alias":{ "alias":"' .. ctrl.String .. '" } } }'))
-  end
+  Send('{ "system":{ "set_dev_alias":{ "alias":"' .. ctrl.String .. '" } } }')
 end
 
 function ClearVariables()
@@ -254,13 +147,17 @@ function ClearVariables()
     Controls["On"].Boolean = false
     Controls["Off"].Boolean = false
     Controls["Toggle"].Boolean = false
-    if DeviceType == "Dimmer" then
+    if DeviceType == "Dimmer" or DeviceType == "Light Strip" then
       Controls["Brightness"].Value = 0
     end
     if EnergyMonitoring then
       Controls["Voltage"].String = ""
       Controls["Current"].String = ""
       Controls["Power"].String = ""
+    end
+    if DeviceType == "Light Strip" then
+      Controls.Hue.Value = 0
+      Controls.Saturation.Value = 0
     end
   end
   Controls["Status"].Value = 3
@@ -290,46 +187,30 @@ end
 function DeviceDisconnect(index)
   PollTimer:Stop()
   Socket:Disconnect()
-  -- Controls["Status"].Value = 3 --not present
-  -- Controls["Status"].String = "Disconnected"
 end
 function DevicePoll()
-  if Socket.IsConnected then
-    if DebugTx then
-      print("TX: " .. '{ "system":{ "get_sysinfo":null } }')
-    end
-    Socket:Write(encode('{ "system":{ "get_sysinfo":null } }'))
+  Send('{ "system":{ "get_sysinfo":null } }')
 
-    if EnergyMonitoring and Info.feature ~= nil and Info.feature:find("ENE") then
-      if isStrip then
-        for p = 1, Properties["Number Of Outputs"].Value do
-          if Info.children ~= nil and Info.children[p] ~= nil then
-            local childID = #Info.children[p].id > 2 and Info.children[p].id or Info.deviceId .. Info.children[p].id
-            Timer.CallAfter(
-              function()
-                if DebugTx then
-                  print(
-                    "Plug " ..
-                      p .. " TX: " .. '{"context":{"child_ids":["' .. childID .. '"]},"emeter":{"get_realtime":{}}}'
-                  )
-                end
-                Socket:Write(encode('{"context":{"child_ids":["' .. childID .. '"]},"emeter":{"get_realtime":{}}}'))
-              end,
-              (.1 * p)
-            )
-          end
+  if EnergyMonitoring and Info.feature ~= nil and Info.feature:find("ENE") then
+    if isStrip then
+      for p = 1, Properties["Number Of Outputs"].Value do
+        if Info.children ~= nil and Info.children[p] ~= nil then
+          local childID = #Info.children[p].id > 2 and Info.children[p].id or Info.deviceId .. Info.children[p].id
+          Timer.CallAfter(
+            function()
+              Send('{"context":{"child_ids":["' .. childID .. '"]},"emeter":{"get_realtime":{}}}')
+            end,
+            (.1 * p)
+          )
         end
-      else
-        Timer.CallAfter(
-          function()
-            if DebugTx then
-              print("TX: " .. '{"emeter":{"get_realtime":{}}}')
-            end
-            Socket:Write(encode('{"emeter":{"get_realtime":{}}}'))
-          end,
-          0.1
-        )
       end
+    else
+      Timer.CallAfter(
+        function()
+          Send('{"emeter":{"get_realtime":{}}}')
+        end,
+        0.1
+      )
     end
   end
 end
@@ -347,6 +228,9 @@ function parseGetInfo(data)
   if data.mac then
     Controls["MACAddress"].String = data.mac
     Info.mac = data.mac
+  elseif data.mic_mac then -- for light strips
+    Controls["MACAddress"].String = data.mic_mac
+    Info.mac = data.mic_mac
   end
   if data.sw_ver then
     Controls["DeviceFirmware"].String = data.hw_ver
@@ -382,7 +266,7 @@ function parseGetInfo(data)
         end
       end
     end
-  else
+  elseif DeviceType ~= "Light Strip" then
     if DeviceType == "Dimmer" then
       if data.brightness then
         Controls["Brightness"].Value = data.brightness
@@ -392,6 +276,10 @@ function parseGetInfo(data)
       Controls["On"].Boolean = data.relay_state == 1
       Controls["Off"].Boolean = data.relay_state == 0
       Controls["Toggle"].Boolean = data.relay_state == 1
+    end
+  else -- Light Strip
+    if data.light_state then
+      ParseLightState(data.light_state)
     end
   end
 end
@@ -422,7 +310,17 @@ end
 
 function Init()
   ClearVariables()
+  if DeviceType == "Light Strip" then
+    GetColorPickers()
+    LinkColorPicker()
+  end
   DeviceConnect()
+end
+
+if DeviceType ~= "Light Strip" then
+  --[[ #include "DimmerSwitch.lua" ]]
+else
+  --[[ #include "LightStrip.lua" ]]
 end
 
 Init()

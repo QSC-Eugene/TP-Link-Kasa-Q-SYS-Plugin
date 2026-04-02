@@ -1,5 +1,5 @@
 -- table.insert(ctrls,{Name = "code",ControlType = "Text",PinStyle = "Input",Count = 1})
-local outputCount = props["Device Type"].Value == "Strip" and props["Number Of Outputs"].Value or 1
+local outputCount = props["Device Type"].Value == "Power Strip" and props["Number Of Outputs"].Value or 1
 
 table.insert(
   ctrls,
@@ -92,7 +92,7 @@ table.insert(
     UserPin = true
   }
 )
-if props["Energy Monitoring"].Value then
+if props["Energy Monitoring"].Value and props["Device Type"].Value ~= "Light Strip" then
   table.insert(
     ctrls,
     {
@@ -175,7 +175,7 @@ if props["Device Type"].Value == "Dimmer" then
     }
   )
 end
-if props["Device Type"].Value == "Strip" then
+if props["Device Type"].Value == "Power Strip" then
   table.insert(
     ctrls,
     {
@@ -186,4 +186,82 @@ if props["Device Type"].Value == "Strip" then
       Count = outputCount
     }
   )
+end
+if props["Device Type"].Value == "Light Strip" then
+  table.insert(
+    ctrls,
+    {
+      Name = "Brightness",
+      ControlType = "Knob",
+      ControlUnit = "Integer",
+      Min = 1,
+      Max = 100,
+      PinStyle = "Both",
+      UserPin = true
+    }
+  )
+  table.insert(
+    ctrls,
+    {
+      Name = "Hue",
+      ControlType = "Knob",
+      ControlUnit = "Integer",
+      Min = 1,
+      Max = 360,
+      PinStyle = "Both",
+      UserPin = true
+    }
+  )
+  table.insert(
+    ctrls,
+    {
+      Name = "Saturation",
+      ControlType = "Knob",
+      ControlUnit = "Integer",
+      Min = 1,
+      Max = 100,
+      PinStyle = "Both",
+      UserPin = true
+    }
+  )
+  table.insert(
+    ctrls,
+    {
+      Name = "TransitionTime", -- in milliseconds
+      ControlType = "Knob",
+      ControlUnit = "Integer",
+      Min = 0,
+      Max = 10000,
+      PinStyle = "Both",
+      UserPin = true
+    }
+  ) 
+  table.insert(
+    ctrls,
+    {
+      Name = "ColorPicker",
+      ControlType = "Text",
+      PinStyle = "Both",
+      UserPin = true
+    }
+  ) 
+  table.insert(
+    ctrls,
+    {
+      Name = "EffectActive",
+      ControlType = "Indicator",
+      IndicatorType = "Led",
+      PinStyle = "Output",
+      UserPin = true
+    }
+  )
+  table.insert(
+    ctrls,
+    {
+      Name = "Effect",
+      ControlType = "Text",
+      PinStyle = "Both",
+      UserPin = true
+    }
+  )  
 end
