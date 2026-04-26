@@ -11,8 +11,8 @@ end
 
 DiscoverySocket = UdpSocket.New()
 DiscoverySocket.EventHandler = function(socket, packet)  
-  data = decode(packet.Data,true)
-  if data.system.get_sysinfo.alias then 
+  local data = decode(packet.Data,true)
+  if data and data.system and data.system.get_sysinfo and data.system.get_sysinfo.alias then 
     print(decodeToString(packet.Data,true))
     print(data.system.get_sysinfo.alias.."["..data.system.get_sysinfo.model.."] - "..packet.Address)
     local mac = data.system.get_sysinfo.mac and data.system.get_sysinfo.mac or data.system.get_sysinfo.mic_mac -- support light strips
